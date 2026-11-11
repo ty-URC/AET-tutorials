@@ -7,7 +7,7 @@ from scipy.ndimage import maximum_filter
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial import cKDTree
 
-__all__ = ["find_atoms", "classify_two_species", "match_atoms"]
+__all__ = ["find_atoms", "classify_two_species", "classify_atoms", "match_atoms"]
 
 
 def _ball(r: float) -> np.ndarray:
@@ -80,6 +80,41 @@ def classify_two_species(intensity: np.ndarray, iterations: int = 100):
             break
         c = new
     return lab, float(c.mean()), c
+
+
+def classify_atoms(intensity: np.ndarray, min_fraction: float = 0.5, iterations: int = 10):
+    """ノイズの極大を除き, 残りを 2 種類の元素に分ける.
+
+    軽い元素の原子は重い元素よりずっと暗い（HAADF では Z の約 1.7 乗）ので,
+    最大値に対するしきい値で候補を切ると軽い原子を落としてしまう. そこで低い
+    しきい値で候補を多めに取り, 「典型的な軽い原子の強度の min_fraction 倍
+    より弱いもの」をノイズとして除く. 軽い原子の典型的な強度は, 残った候補を
+    2 つに分けた暗い方の平均で, これを繰り返して決める.
+
+    Remove noise peaks and split the rest into two species. Light atoms are
+    much dimmer than heavy ones (about Z^1.7 in HAADF), so a threshold relative
+    to the brightest peak loses light atoms. Instead, candidates are collected
+    with a low threshold, and those weaker than ``min_fraction`` times a
+    typical light atom are rejected as noise. The typical light-atom intensity
+    is the mean of the dimmer of the two groups, found iteratively.
+
+    戻り値 / returns: (labels: -1 = ノイズ / noise, 0 = 軽い元素 / light, 1 = 重い元素 / heavy,
+                      元素を分けるしきい値 / species threshold,
+                      ノイズを除くしきい値 / noise threshold)
+    """
+    x = np.asarray(intensity, dtype=np.float64)
+    keep = x > 0
+    thr = noise_thr = 0.0
+    for _ in range(iterations):
+        _, thr, means = classify_two_species(x[keep])
+        noise_thr = min_fraction * means[0]
+        new = x >= noise_thr
+        if np.array_equal(new, keep):
+            break
+        keep = new
+    labels = np.full(x.shape, -1, dtype=np.int64)
+    labels[keep] = (x[keep] > thr).astype(np.int64)
+    return labels, float(thr), float(noise_thr)
 
 
 def match_atoms(true_pos: np.ndarray, found_pos: np.ndarray,
