@@ -1,0 +1,110 @@
+Metadata-Version: 2.4
+Name: aet-tutorials
+Version: 0.1.0
+Summary: Atomic electron tomography tutorials: GENFIRE and RESIRE reconstruction of an alloy nanoparticle
+Author: Tomokazu Yamamoto
+Requires-Python: <3.14,>=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.23
+Requires-Dist: scipy>=1.9
+Requires-Dist: matplotlib>=3.6
+Requires-Dist: mrcfile>=1.4
+Requires-Dist: pyfftw>=0.13
+Requires-Dist: jupyterlab>=4
+
+# AET Tutorials
+
+原子分解能電子線トモグラフィー（atomic electron tomography, AET）の入門用チュートリアルです．
+数 nm の合金ナノ粒子（FePt）を例に，**傾斜シリーズ → 三次元再構成（GENFIRE / RESIRE）→ 原子の抽出と元素の分類**
+までを，JupyterLab のノートブックで自分の PC 上で一通り体験できます．
+正解がわかっているシミュレーションデータを使うので，再構成や原子の抽出がどれだけ正しいかを確かめられます．
+
+今後も内容を更新していく予定です．
+
+## 環境構築
+
+ターミナル（Windows では「Anaconda Prompt」または「PowerShell」，macOS / Linux では「ターミナル」）で実行します．
+方法 A と方法 B のどちらか一方で構いません．
+
+### 方法 A：conda（Anaconda / Miniconda / Miniforge）を使う場合（おすすめ）
+
+```bash
+git clone https://github.com/ty-URC/AET-tutorials.git
+cd AET-tutorials
+conda env create -f environment.yml
+conda activate aet
+jupyter lab
+```
+
+### 方法 B：Python（3.10〜3.12）と pip を使う場合
+
+Windows（PowerShell）：
+
+```powershell
+git clone https://github.com/ty-URC/AET-tutorials.git
+cd AET-tutorials
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+jupyter lab
+```
+
+macOS / Linux：
+
+```bash
+git clone https://github.com/ty-URC/AET-tutorials.git
+cd AET-tutorials
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+jupyter lab
+```
+
+- `git` がない場合は，このページの「Code」→「Download ZIP」でダウンロードして展開し，そのフォルダで `cd` 以降を実行してください．
+- 2 回目からは `conda activate aet`（方法 B では `.venv` の activate）→ `jupyter lab` だけで始められます．
+- PowerShell で `Activate.ps1` が実行できないと言われた場合は，先に `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` を実行してください．
+- pyFFTW のインストールに失敗する場合は，`requirements.txt` の `pyfftw` の行を消してからもう一度実行してください（なくても動きます）．
+
+## ノートブック
+
+JupyterLab が開いたら，`notebooks` フォルダのノートブックを順番に実行します．
+
+| ノートブック | 内容 |
+|---|---|
+| [00_setup.ipynb](notebooks/00_setup.ipynb) | 環境構築と動作確認 |
+| [01_model_and_tilt_series.ipynb](notebooks/01_model_and_tilt_series.ipynb) | 直径 3 nm の FePt ナノ粒子の原子モデルと，ノイズを含む傾斜シリーズ（±70°, 2.5° 間隔）を作る |
+| [02_genfire.ipynb](notebooks/02_genfire.ipynb) | GENFIRE（フーリエ空間の反復再構成）で三次元像を得る |
+| [03_resire.ipynb](notebooks/03_resire.ipynb) | RESIRE（実空間の反復再構成）で三次元像を得る |
+| [04_atom_tracing.ipynb](notebooks/04_atom_tracing.ipynb) | 原子の位置を抽出し，元素を分類して，正解と比べる |
+
+どのノートブックも，ノート PC で 1 分程度で実行できます（メモリ 8 GB 以上を推奨）．
+GitHub 上でも実行結果つきで閲覧できます．
+
+## 構成
+
+```
+AET-tutorials/
+├── notebooks/        ノートブック
+├── src/
+│   ├── genfire_cpu/  GENFIRE の CPU 実装
+│   ├── resire_cpu/   RESIRE の CPU 実装
+│   └── aet_tools/    試料モデル・ノイズ・原子の抽出・表示など，ノートブック用の道具
+├── data/             ノートブックが作るデータ（実行すると自動で作られます）
+├── environment.yml   conda 用の環境ファイル
+└── requirements.txt  pip 用のパッケージ一覧
+```
+
+- `genfire_cpu` は GENFIRE-Python（https://github.com/genfire-em/GENFIRE-Python）と同じアルゴリズムを，
+  大きな格子でも CPU で速く計算できるように実装し直したものです．
+- `resire_cpu` は RESIRE（Pham *et al.*, 2023）のアルゴリズムを，1 軸傾斜の場合について NumPy / SciPy で実装したものです．
+
+## 参考文献
+
+1. J. Miao, P. Ercius, S. J. L. Billinge, "Atomic electron tomography: 3D structures without crystals", *Science* **353**, aaf2157 (2016).
+2. A. Pryor Jr. *et al.*, "GENFIRE: A generalized Fourier iterative reconstruction algorithm for high-resolution 3D imaging", *Sci. Rep.* **7**, 10409 (2017).
+3. M. Pham *et al.*, "Accurate real space iterative reconstruction (RESIRE) algorithm for tomography", *Sci. Rep.* **13**, 5624 (2023).
+4. Y. Yang *et al.*, "Deciphering chemical order/disorder and material properties at the single-atom level", *Nature* **542**, 75–79 (2017).
+
+## 作者
+
+Tomokazu Yamamoto
