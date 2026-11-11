@@ -84,17 +84,32 @@ def classify_two_species(intensity: np.ndarray, iterations: int = 100):
 
 def match_atoms(true_pos: np.ndarray, found_pos: np.ndarray,
                 true_species=None, found_species=None,
-                tolerance_px: float = 2.0, pixel_size: float = 1.0) -> dict:
+                tolerance_px: float = 2.0, pixel_size: float = 1.0,
+                remove_offset: bool = False) -> dict:
     """正解の原子と見つけた原子を 1 対 1 に対応させて, 精度を数える.
 
-    tolerance_px より離れた組は対応させない。戻り値の辞書:
+    tolerance_px より離れた組は対応させない。
+    remove_offset=True なら, 粒子全体の平行移動（位置合わせで決まらない 3 次元の
+    ずれ）を求めて差し引いてから数える / if True, the overall 3D translation
+    (which alignment cannot fix) is estimated and removed before counting.
+    戻り値の辞書:
       found / missed / false : 正しく見つけた数, 見落とし, 誤検出
       rmsd_pm                : 対応した原子の位置ずれの二乗平均平方根（pm）
       species_accuracy       : 対応した原子のうち, 元素が正しい割合
       pairs                  : (正解の番号, 見つけた原子の番号) の配列
+      offset_px              : 差し引いた平行移動（ピクセル） / removed translation (px)
     """
     t = np.asarray(true_pos, float)
     f = np.asarray(found_pos, float)
+    offset = np.zeros(3)
+    if remove_offset:
+        for tol in (3 * tolerance_px, 2 * tolerance_px, tolerance_px, tolerance_px):
+            d, j = cKDTree(f - offset).query(t, distance_upper_bound=tol)
+            ok = np.isfinite(d)
+            if ok.sum() < 3:
+                break
+            offset = offset + np.median(f[j[ok]] - offset - t[ok], axis=0)
+        f = f - offset
     tree = cKDTree(f)
     pairs = tree.query_ball_point(t, tolerance_px)
     cost = np.full((len(t), len(f)), 1e6)
@@ -109,6 +124,7 @@ def match_atoms(true_pos: np.ndarray, found_pos: np.ndarray,
                false=int(len(f) - ok.sum()),
                rmsd_pm=float(np.sqrt(np.mean(d ** 2)) * pixel_size * 100) if len(d) else np.nan,
                displacement_pm=d * pixel_size * 100,
+               offset_px=offset,
                pairs=np.stack([ri, ci], 1))
     if true_species is not None and found_species is not None:
         same = np.asarray(true_species)[ri] == np.asarray(found_species)[ci]

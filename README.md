@@ -1,8 +1,8 @@
 # AET Tutorials
 
-原子分解能電子線トモグラフィー（atomic electron tomography, AET）の入門用チュートリアルです．数 nm の合金ナノ粒子（FePt）を例に，**傾斜シリーズ → 三次元再構成（GENFIRE / RESIRE）→ 原子の抽出と元素の分類**までを，JupyterLab のノートブックで自分の PC 上で一通り体験できます．正解がわかっているシミュレーションデータを使うので，再構成や原子の抽出がどれだけ正しいかを確かめられます．再構成中は，進捗・R 因子などの指標・三次元像の断面が図として更新され続けます．
+原子分解能電子線トモグラフィー（atomic electron tomography, AET）の入門用チュートリアルです．数 nm の合金ナノ粒子（FePt）を例に，**傾斜シリーズ → 前処理（背景除去・位置合わせ）→ 三次元再構成（GENFIRE / RESIRE）→ 原子の抽出と元素の分類**までを，JupyterLab のノートブックで自分の PC 上で一通り体験できます．正解がわかっているシミュレーションデータを使うので，再構成や原子の抽出がどれだけ正しいかを確かめられます．再構成中は，進捗・R 因子などの指標・三次元像の断面が図として更新され続けます．
 
-An introductory tutorial on atomic electron tomography (AET). Using an alloy (FePt) nanoparticle a few nanometres across, you go through **tilt series → 3D reconstruction (GENFIRE / RESIRE) → atom tracing and species classification** in JupyterLab notebooks on your own computer. Because the data are simulated and the answer is known, you can check how accurate each step is. During reconstruction, a live figure shows the progress, the R factor and other metrics, and sections of the current volume.
+An introductory tutorial on atomic electron tomography (AET). Using an alloy (FePt) nanoparticle a few nanometres across, you go through **tilt series → preprocessing (background removal, alignment) → 3D reconstruction (GENFIRE / RESIRE) → atom tracing and species classification** in JupyterLab notebooks on your own computer. Because the data are simulated and the answer is known, you can check how accurate each step is. During reconstruction, a live figure shows the progress, the R factor and other metrics, and sections of the current volume.
 
 今後も内容を更新していく予定です． / The tutorial will continue to be updated.
 
@@ -66,9 +66,10 @@ uv run jupyter lab
 |---|---|
 | [00_setup.ipynb](notebooks/00_setup.ipynb) | 環境構築と動作確認<br>Setup and check |
 | [01_model_and_tilt_series.ipynb](notebooks/01_model_and_tilt_series.ipynb) | 直径 3 nm の FePt ナノ粒子の原子モデルと，ノイズを含む傾斜シリーズ（±70°, 2.5° 間隔）を作る<br>Atomic model of a 3 nm FePt nanoparticle and a noisy tilt series (±70°, 2.5° steps) |
-| [02_genfire.ipynb](notebooks/02_genfire.ipynb) | GENFIRE（フーリエ空間の反復再構成）<br>GENFIRE (Fourier-space iterative reconstruction) |
-| [03_resire.ipynb](notebooks/03_resire.ipynb) | RESIRE（実空間の反復再構成）<br>RESIRE (real-space iterative reconstruction) |
-| [04_atom_tracing.ipynb](notebooks/04_atom_tracing.ipynb) | 原子の抽出，元素の分類，正解との比較<br>Atom tracing, species classification and comparison with the ground truth |
+| [02_alignment.ipynb](notebooks/02_alignment.ipynb) | 前処理：わざとずらし支持膜の背景を加えた傾斜シリーズの背景除去と位置合わせ（相互相関法・共通線法・重心法）<br>Preprocessing: background removal and alignment (cross-correlation, common line, centre of mass) of a deliberately shifted tilt series with a support-film background |
+| [03_genfire.ipynb](notebooks/03_genfire.ipynb) | GENFIRE（フーリエ空間の反復再構成）<br>GENFIRE (Fourier-space iterative reconstruction) |
+| [04_resire.ipynb](notebooks/04_resire.ipynb) | RESIRE（実空間の反復再構成）<br>RESIRE (real-space iterative reconstruction) |
+| [05_atom_tracing.ipynb](notebooks/05_atom_tracing.ipynb) | 原子の抽出，元素の分類，正解との比較<br>Atom tracing, species classification and comparison with the ground truth |
 
 各ノートブックは，ノート PC で 10〜30 秒程度で実行できます（メモリ 8 GB 以上を推奨）．GitHub 上でも実行結果つきで閲覧できます．
 
@@ -82,7 +83,7 @@ AET-tutorials/
 ├── src/
 │   ├── genfire_cpu/  GENFIRE の CPU 実装 / CPU implementation of GENFIRE
 │   ├── resire_cpu/   RESIRE の CPU 実装 / CPU implementation of RESIRE
-│   └── aet_tools/    モデル・ノイズ・原子の抽出・表示・進捗表示 / model, noise, atom tracing, plotting, live monitor
+│   └── aet_tools/    モデル・前処理・原子の抽出・表示・進捗表示 / model, preprocessing, atom tracing, plotting, live monitor
 ├── data/             ノートブックが作るデータ / data written by the notebooks
 ├── pyproject.toml    必要なパッケージ / required packages (read by uv)
 └── uv.lock           パッケージのバージョン / pinned package versions (written by uv)

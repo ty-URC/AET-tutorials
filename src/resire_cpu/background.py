@@ -77,8 +77,9 @@ def laplace_fill(values: np.ndarray, mask: np.ndarray) -> np.ndarray:
     """Replace ``values`` inside ``mask`` by the harmonic interpolant.
 
     Solves the 5-point discrete Laplace equation on the masked pixels with the
-    unmasked neighbours as Dirichlet data.  The mask must not touch the image
-    border (it is a particle footprint, so it does not).
+    unmasked neighbours as Dirichlet data.  Where the mask touches the image
+    border the missing neighbour is dropped (zero normal derivative), which
+    happens when a particle nearly fills a small field of view.
     """
     out = np.asarray(values, np.float64).copy()
     idx = np.full(mask.shape, -1, np.int64)
@@ -87,15 +88,23 @@ def laplace_fill(values: np.ndarray, mask: np.ndarray) -> np.ndarray:
     if n == 0:
         return out
     idx[ii, jj] = np.arange(n)
-    rows, cols, vals = [np.arange(n)], [np.arange(n)], [np.full(n, 4.0)]
+    diag = np.zeros(n)
+    rows, cols, vals = [], [], []
     rhs = np.zeros(n)
     for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
         ni, nj = ii + di, jj + dj
-        inside = idx[ni, nj] >= 0
+        ok = (ni >= 0) & (ni < mask.shape[0]) & (nj >= 0) & (nj < mask.shape[1])
+        diag += ok
+        nic, njc = np.where(ok, ni, 0), np.where(ok, nj, 0)
+        inside = ok & (idx[nic, njc] >= 0)
+        dirichlet = ok & ~inside
         rows.append(np.arange(n)[inside])
         cols.append(idx[ni[inside], nj[inside]])
         vals.append(np.full(inside.sum(), -1.0))
-        rhs[~inside] += out[ni[~inside], nj[~inside]]
+        rhs[dirichlet] += out[ni[dirichlet], nj[dirichlet]]
+    rows.append(np.arange(n))
+    cols.append(np.arange(n))
+    vals.append(diag)
     A = coo_matrix((np.concatenate(vals),
                     (np.concatenate(rows), np.concatenate(cols))),
                    shape=(n, n)).tocsr()
