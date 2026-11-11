@@ -18,7 +18,8 @@ def _ball(r: float) -> np.ndarray:
 
 
 def find_atoms(volume: np.ndarray, min_distance_px: float,
-               threshold: float = 0.1, integrate_radius_px: float | None = None):
+               threshold: float = 0.1, integrate_radius_px: float | None = None,
+               sharpen_sigma_px: float | None = None):
     """三次元像の局所最大を原子の候補として取り出す.
 
     1. 隣り合う原子より近い極大は同じ原子とみなし, 明るい方だけ残す
@@ -28,9 +29,21 @@ def find_atoms(volume: np.ndarray, min_distance_px: float,
     4. 半径 integrate_radius_px の球の中の強度の和を, その原子の強度とする
        （元素の分類に使う）。
 
+    sharpen_sigma_px を与えると, 1〜3 は像を鋭くしたもの（ガウシアンのラプラシアン,
+    幅は原子像の σ 程度）で行う. 原子像が広いと, 明るい原子のすそに隣の暗い原子が
+    埋もれて極大にならないが, 鋭くするとそれぞれの原子が分かれる. 4 の強度は元の像で求める.
+    With sharpen_sigma_px, steps 1-3 run on a sharpened volume (Laplacian of
+    Gaussian of about the atom width). When atoms are broad, a dim atom next to
+    a bright one sits on its tail and is not a local maximum; sharpening
+    separates them. Step 4 still uses the original volume.
+
     戻り値: (位置 (N, 3) [配列の添字], 強度 (N,))。明るい順。
     """
-    vol = np.asarray(volume, dtype=np.float64)
+    orig = np.asarray(volume, dtype=np.float64)
+    vol = orig
+    if sharpen_sigma_px:
+        from scipy.ndimage import gaussian_laplace
+        vol = np.clip(-gaussian_laplace(orig, sharpen_sigma_px), 0, None)
     n = np.array(vol.shape)
     size = int(2 * np.floor(min_distance_px / 2) + 1)
     peak = (vol == maximum_filter(vol, size=size)) & (vol > threshold * vol.max())
@@ -61,7 +74,7 @@ def find_atoms(volume: np.ndarray, min_distance_px: float,
     inten = np.empty(len(idx))
     for j, p in enumerate(idx):
         q = np.clip(p + ball, 0, n - 1)
-        inten[j] = vol[tuple(q.T)].sum()
+        inten[j] = orig[tuple(q.T)].sum()
     return pos, inten
 
 
